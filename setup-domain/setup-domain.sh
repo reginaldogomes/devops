@@ -10,19 +10,19 @@ if [ -z "$DOMAIN" ] || [ -z "$PORT" ] || [ -z "$REPO" ]; then
   exit 1
 fi
 
-echo "\n▶ Criando diretório: $ROOT_DIR"
+echo "▶ Criando diretório: $ROOT_DIR"
 mkdir -p "$ROOT_DIR"
 
-echo "\n▶ Clonando repositório: $REPO"
+echo "▶ Clonando repositório: $REPO"
 git clone "$REPO" "$ROOT_DIR"
 
 cd "$ROOT_DIR"
 
-echo "\n▶ Instalando dependências e buildando..."
+echo "▶ Instalando dependências e buildando..."
 npm install --omit=dev
 npm run build
 
-echo "\n▶ Gerando ecosystem.config.js..."
+echo "▶ Criando ecosystem.config.js"
 cat > "$ROOT_DIR/ecosystem.config.js" <<EOF
 module.exports = {
   apps: [
@@ -41,13 +41,13 @@ module.exports = {
 };
 EOF
 
-echo "\n▶ Inicializando PM2..."
+echo "▶ Inicializando com PM2..."
 pm2 start ecosystem.config.js
 pm2 save
 
-echo "\n▶ Criando configuração do NGINX..."
+echo "▶ Criando configuração do NGINX..."
 NGINX_PATH="/etc/nginx/sites-available/$DOMAIN"
-cat > "$NGINX_PATH" <<EOF
+sudo bash -c "cat > $NGINX_PATH" <<EOF
 server {
   listen 80;
   server_name $DOMAIN www.$DOMAIN;
@@ -63,10 +63,11 @@ server {
 }
 EOF
 
-ln -sf "$NGINX_PATH" /etc/nginx/sites-enabled/
-nginx -t && systemctl reload nginx
+echo "▶ Ativando site no NGINX..."
+sudo ln -sf "$NGINX_PATH" /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 
-echo "\n▶ Emitindo certificado SSL com Certbot..."
-certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos -m seuemail@dominio.com.br
+echo "▶ Emitindo certificado SSL com Certbot..."
+sudo certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos -m seuemail@dominio.com.br
 
-echo "\n✅ Aplicação do domínio $DOMAIN disponível em: https://$DOMAIN"
+echo "✅ Domínio $DOMAIN configurado com sucesso!"
